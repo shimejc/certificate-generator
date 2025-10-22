@@ -162,7 +162,7 @@ button:hover {
 <body>
 
 <div class="container">
-<h2>ShiMej Journal Certificate Generator</h2>
+<h2>ShiMej  IJEIR Publication Certificate Generator</h2>
 
 <div class="form-section">
 <label>Certificate No:</label>
@@ -190,7 +190,8 @@ button:hover {
 <input type="text" id="verifyLink" placeholder="https://www.shimej.com/verify?cert=" required>
 
 <label>Publisher Name:</label>
-<input type="text" id="publisherName" value="Arti Dixit" required>
+<!-- <input type="text" id="publisherName" value="Arti Dixit" required>-->
+<p><strong>Publisher: Arti Dixit</strong></p>
 
 <button onclick="generateCertificates()">Generate Certificate(s)</button>
 <button onclick="downloadPDFs()">Download PDF(s)</button>
@@ -213,7 +214,7 @@ function generateCertificates(){
   const volume = document.getElementById('volume').value.trim();
   const issue = document.getElementById('issue').value.trim();
   const date = document.getElementById('certDate').value.trim();
-  const publisherName = document.getElementById('publisherName').value.trim();
+  const publisherName = "Arti Dixit"; // fixed, no input needed
   const verifyLinkBase = document.getElementById('verifyLink').value.trim();
 
   if(!certNo || !authors.length || !affiliations.length || !paperTitle || !volume || !issue || !date || !publisherName || !verifyLinkBase){
@@ -258,9 +259,9 @@ function generateCertificates(){
       </div>
 
       <div class='publisher-section'>
-        <img src='${signatureDataURL}' class='signature'>
-        <div><strong>${publisherName}</strong><br>Publisher, IJEIR</div>
-      </div>
+  <img src='${signatureDataURL}' class='signature'>
+  <div><strong>${publisherName}</strong><br>Publisher, IJEIR</div>
+</div>
       <div class='qr-code' id='qr-${i}'></div>
     `;
     certContainer.appendChild(certDiv);

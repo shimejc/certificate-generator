@@ -166,8 +166,10 @@
     <label>Verification Link (for QR):</label>
     <input type="text" id="verifyLink" placeholder="https://www.shimej.com/verify?cert=" required><br>
 
-    <label>Publisher Name:</label>
-    <input type="text" id="publisherName" value="Arti Dixit" required><br>
+   <label>Publisher Name:</label>
+<!-- <input type="text" id="publisherName" value="Arti Dixit" required> -->
+<p><strong>Publisher: Arti Dixit</strong></p>
+
 
     <button onclick="generateCertificates()">Generate Certificate(s)</button>
     <button onclick="downloadPDFs()">Download PDF(s)</button>
@@ -191,7 +193,7 @@ function generateCertificates(){
   const volume = document.getElementById('volume').value.trim();
   const issue = document.getElementById('issue').value.trim();
   const date = document.getElementById('certDate').value.trim();
-  const publisherName = document.getElementById('publisherName').value.trim();
+  const publisherName = "Arti Dixit"; // fixed, no input needed
   const verifyLinkBase = document.getElementById('verifyLink').value.trim();
 
   // ==== Validation ====
@@ -236,9 +238,9 @@ function generateCertificates(){
 
       <!-- Fixed Bottom Section -->
       <div class='publisher-section'>
-        <img src='${signatureDataURL}' class='signature'>
-        <div><strong>${publisherName}</strong><br>Publisher, IJSESR</div>
-      </div>
+  <img src='${signatureDataURL}' class='signature'>
+  <div><strong>${publisherName}</strong><br>Publisher, IJEIR</div>
+</div>
       <div class='qr-code' id='qr-${i}'></div>
     `;
 

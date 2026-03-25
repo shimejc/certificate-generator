@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>ShiMej IJEIR Certificate Generator</title>
+<title>ShiMej IJEIR Certificate Generator - Unlimited Authors</title>
 
 <!-- Required Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -54,7 +54,7 @@ label {
   color: #0a3b4e;
   font-size: 0.9rem;
 }
-input, textarea {
+input, textarea, select {
   padding: 10px 12px;
   font-size: 15px;
   border: 1px solid #bdc3c7;
@@ -69,7 +69,7 @@ input::placeholder, textarea::placeholder {
   font-weight: normal;
   opacity: 1;
 }
-input:focus, textarea:focus {
+input:focus, textarea:focus, select:focus {
   border-color: #1a6d8a;
   outline: none;
   box-shadow: 0 0 0 3px rgba(26,109,138,0.2);
@@ -77,6 +77,10 @@ input:focus, textarea:focus {
 textarea {
   resize: vertical;
   min-height: 80px;
+}
+select {
+  cursor: pointer;
+  background: #fefefe;
 }
 .button-group {
   display: flex;
@@ -145,7 +149,6 @@ button:active {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed #1e6f5c;
   background: #fafcfb;
   overflow: hidden;
 }
@@ -267,7 +270,7 @@ button:active {
 <body>
 
 <div class="container">
-<h2>📜 ShiMej IJEIR – Certificate Generator</h2>
+<h2>📜 ShiMej IJEIR – Certificate Generator (Unlimited Authors)</h2>
 
 <div class="form-grid">
   <div class="form-group">
@@ -292,7 +295,12 @@ button:active {
   </div>
   <div class="form-group">
     <label>📙 Issue:</label>
-    <input type="text" id="issue" placeholder="e.g. 3">
+    <select id="issue">
+      <option value="1">1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="4">4</option>
+    </select>
   </div>
   <div class="form-group">
     <label>📅 Publication Date:</label>
@@ -354,7 +362,7 @@ function getFormData() {
   
   let paperTitle = document.getElementById('paperTitle').value.trim();
   let volume = document.getElementById('volume').value.trim();
-  let issue = document.getElementById('issue').value.trim();
+  let issue = document.getElementById('issue').value; // dropdown value
   let date = document.getElementById('certDate').value;
   let verifyLinkBase = document.getElementById('verifyLink').value.trim();
   if (!verifyLinkBase) verifyLinkBase = "https://www.shimej.com/verify?cert=";
@@ -481,7 +489,7 @@ function createCertificateElement(author, affiliation, idx, totalAuthors, formDa
   
   const displayPaperTitle = paperTitle || "[Paper Title]";
   const displayVolume = volume || "[Volume]";
-  const displayIssue = issue || "[Issue]";
+  const displayIssue = issue || "1";
   const displayDate = date || "[Date]";
   
   certDiv.innerHTML = `

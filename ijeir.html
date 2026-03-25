@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>ShiMej IJEIR Certificate Generator - Unlimited Authors</title>
+<title>ShiMej IJEIR Certificate Generator</title>
 
 <!-- Required Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -54,7 +54,6 @@ label {
   color: #0a3b4e;
   font-size: 0.9rem;
 }
-/* Placeholder text styling - gray and italic */
 input, textarea {
   padding: 10px 12px;
   font-size: 15px;
@@ -104,12 +103,6 @@ button:hover {
 }
 button:active {
   transform: translateY(1px);
-}
-hr {
-  margin: 20px 0;
-  border: 0;
-  height: 2px;
-  background: linear-gradient(to right, #c0dfd9, transparent);
 }
 
 /* ===== Certificate Design ===== */
@@ -243,10 +236,17 @@ hr {
   padding: 6px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  width: 97px;
+  height: 97px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .qr-code img, .qr-code canvas {
   display: block;
   margin: 0 auto;
+  width: 85px;
+  height: 85px;
 }
 @media print {
   .container, .button-group, .form-grid, h2 {
@@ -276,11 +276,11 @@ hr {
   </div>
   <div class="form-group">
     <label>📚 Authors (comma separated):</label>
-    <input type="text" id="authors" placeholder="e.g. Dr. Meera Sharma, Prof. Rajiv Menon">
+    <input type="text" id="authors" placeholder="e.g. Dr. Meera Sharma, Prof. Rajiv Menon, Arjun Kumar">
   </div>
   <div class="form-group">
     <label>🏛️ Affiliations (each on new line, same order):</label>
-    <textarea id="affiliations" rows="3" placeholder="Indian Institute of Science, Bangalore&#10;Delhi University, Delhi"></textarea>
+    <textarea id="affiliations" rows="3" placeholder="If you put ONE affiliation, it will be used for ALL authors&#10;If multiple, match with author order&#10;Example:&#10;IIT Delhi, India&#10;Delhi University"></textarea>
   </div>
   <div class="form-group">
     <label>📄 Paper Title:</label>
@@ -306,7 +306,7 @@ hr {
 
 <div class="button-group">
   <button onclick="generateUnlimitedCertificates()">✨ Generate Certificates</button>
-  <button onclick="downloadAllPDFsWithText()">📑 Download All PDFs</button>
+  <button onclick="downloadAllPDFsDirect()">📑 Download All PDFs (Direct Landscape)</button>
 </div>
 
 <div id="certificatesContainer" class="certificates-wrapper">
@@ -331,14 +331,27 @@ const SIGNATURE_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAY8AAACe
 
 const PUBLISHER_NAME = "Arti Dixit";
 
-// Helper: get form values - all fields are optional now, will use placeholders if empty
+// Helper: get form values with smart affiliation handling
 function getFormData() {
   let certBase = document.getElementById('certNo').value.trim();
-  // If empty, don't set default - will use placeholder in certificate display
   let authorsRaw = document.getElementById('authors').value.trim();
   let authors = authorsRaw ? authorsRaw.split(',').map(a => a.trim()).filter(a => a) : [];
   let affiliationsRaw = document.getElementById('affiliations').value;
-  let affiliations = affiliationsRaw ? affiliationsRaw.split('\n').map(a => a.trim()).filter(a => a) : [];
+  let affiliationsList = affiliationsRaw ? affiliationsRaw.split('\n').map(a => a.trim()).filter(a => a) : [];
+  
+  // SMART AFFILIATION HANDLING:
+  // If only ONE affiliation is provided, use it for ALL authors
+  let affiliations = [];
+  if (affiliationsList.length === 1 && authors.length > 1) {
+    // Single affiliation - repeat for all authors
+    for (let i = 0; i < authors.length; i++) {
+      affiliations.push(affiliationsList[0]);
+    }
+  } else {
+    // Multiple affiliations - use as is
+    affiliations = affiliationsList;
+  }
+  
   let paperTitle = document.getElementById('paperTitle').value.trim();
   let volume = document.getElementById('volume').value.trim();
   let issue = document.getElementById('issue').value.trim();
@@ -355,11 +368,11 @@ function validateAuthorAffiliationCount(authors, affiliations) {
     return false;
   }
   if (affiliations.length === 0) {
-    alert("⚠️ Please add affiliations for each author (one per line).");
+    alert("⚠️ Please add at least one affiliation (single line for all authors, or multiple lines matching author order).");
     return false;
   }
   if (affiliations.length !== authors.length) {
-    alert(`⚠️ Number of authors (${authors.length}) does NOT match number of affiliations (${affiliations.length}).\nPlease provide exactly one affiliation per author (each in new line).`);
+    alert(`⚠️ Number of authors (${authors.length}) does NOT match number of affiliations (${affiliations.length}).\n\n💡 TIP: If you want the same affiliation for all authors, just enter ONE affiliation line.`);
     return false;
   }
   return true;
@@ -382,10 +395,59 @@ function generateUniqueLinkForAuthor(idx, total, formData) {
   return qrLink;
 }
 
+// Function to generate QR code as canvas
+async function generateQRCodeCanvas(text, width, height) {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    // Use QRCode to canvas with the library
+    try {
+      // Create a temporary div for QRCode library
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      document.body.appendChild(tempDiv);
+      
+      new QRCode(tempDiv, {
+        text: text,
+        width: width,
+        height: height,
+        colorDark: "#1e4a2f",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      
+      // Wait for QR to generate
+      setTimeout(() => {
+        const qrImg = tempDiv.querySelector('img');
+        if (qrImg) {
+          const img = new Image();
+          img.onload = () => {
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            document.body.removeChild(tempDiv);
+            resolve(canvas);
+          };
+          img.onerror = () => {
+            document.body.removeChild(tempDiv);
+            reject(new Error('QR image load failed'));
+          };
+          img.src = qrImg.src;
+        } else {
+          document.body.removeChild(tempDiv);
+          reject(new Error('QR generation failed'));
+        }
+      }, 100);
+    } catch(e) {
+      document.body.removeChild(tempDiv);
+      reject(e);
+    }
+  });
+}
+
 function createCertificateElement(author, affiliation, idx, totalAuthors, formData) {
-  const { certBase, paperTitle, volume, issue, date, verifyLinkBase } = formData;
+  const { certBase, paperTitle, volume, issue, date } = formData;
   
-  // Generate certificate number - if empty show placeholder style in gray? We'll show with placeholder text style in certificate
   let uniqueCertNo = "";
   if (totalAuthors > 1) {
     uniqueCertNo = certBase ? `${certBase}-${idx+1}` : `CERT-${idx+1}`;
@@ -393,16 +455,15 @@ function createCertificateElement(author, affiliation, idx, totalAuthors, formDa
     uniqueCertNo = certBase || "CERTIFICATE NUMBER";
   }
   
-  const qrLink = generateUniqueLinkForAuthor(idx, totalAuthors, formData);
-  
-  // Use provided Base64 or fallback to empty (will show placeholder text)
   const logoImgSrc = LOGO_BASE64 || "";
   const signatureImgSrc = SIGNATURE_BASE64 || "";
   
   const certDiv = document.createElement('div');
   certDiv.className = 'certificate';
   certDiv.setAttribute('data-cert-idx', idx);
-  certDiv.setAttribute('data-qr-link', qrLink);
+  certDiv.setAttribute('data-author', author);
+  certDiv.setAttribute('data-affiliation', affiliation);
+  certDiv.setAttribute('data-cert-no', uniqueCertNo);
   
   let logoHtml = '';
   if (logoImgSrc) {
@@ -418,13 +479,10 @@ function createCertificateElement(author, affiliation, idx, totalAuthors, formDa
     signatureHtml = `<div style="font-family: 'Brush Script MT', cursive; font-size: 22px; color: #555;">${PUBLISHER_NAME}</div>`;
   }
   
-  // Display values with fallbacks
   const displayPaperTitle = paperTitle || "[Paper Title]";
   const displayVolume = volume || "[Volume]";
   const displayIssue = issue || "[Issue]";
   const displayDate = date || "[Date]";
-  // For certificate number - if empty show in gray style? We'll show normally but if it's placeholder text we can style differently
-  const displayCertNo = uniqueCertNo;
   
   certDiv.innerHTML = `
     <div class="header-section">
@@ -432,7 +490,7 @@ function createCertificateElement(author, affiliation, idx, totalAuthors, formDa
         <div class="logo-container">
           ${logoHtml}
         </div>
-        <div class="cert-no">🏅 Certificate No: ${escapeHtml(displayCertNo)}</div>
+        <div class="cert-no">🏅 Certificate No: ${escapeHtml(uniqueCertNo)}</div>
       </div>
       <div class="header-right">
         <div class="issn">ISSN: 3049-4052 (Online)</div>
@@ -497,136 +555,154 @@ function generateUnlimitedCertificates() {
             correctLevel: QRCode.CorrectLevel.M
           });
         } catch(e) {
-          qrContainer.innerHTML = `<div style="font-size:10px;">QR</div>`;
+          qrContainer.innerHTML = `<div style="font-size:10px;">QR Error</div>`;
         }
       }
     }
-  }, 80);
+  }, 100);
   
-  alert(`✅ ${authors.length} certificate(s) generated successfully!`);
+  alert(`✅ ${authors.length} certificate(s) generated successfully! QR codes visible in preview.`);
 }
 
-async function downloadAllPDFsWithText() {
+// DIRECT PDF DOWNLOAD - WITH WORKING QR CODES
+async function downloadAllPDFsDirect() {
   if (!currentCertificates.length) {
     alert("⚠️ No certificates found! Please click 'Generate Certificates' first.");
     return;
   }
   
+  const { jsPDF } = window.jspdf;
   const total = currentCertificates.length;
   const formData = getFormData();
   
   for (let idx = 0; idx < total; idx++) {
-    const originalCert = currentCertificates[idx];
-    const cloneCert = originalCert.cloneNode(true);
-    const authorName = formData.authors[idx];
-    
-    // Generate certificate number for PDF
-    let uniqueCertNo = "";
-    if (total > 1) {
-      uniqueCertNo = formData.certBase ? `${formData.certBase}-${idx+1}` : `CERT-${idx+1}`;
-    } else {
-      uniqueCertNo = formData.certBase || "CERTIFICATE NUMBER";
-    }
-    
-    const dynamicLink = generateUniqueLinkForAuthor(idx, total, formData);
-    
-    const certNoSpan = cloneCert.querySelector('.cert-no');
-    if (certNoSpan) certNoSpan.innerHTML = `🏅 Certificate No: ${escapeHtml(uniqueCertNo)}`;
-    
-    const qrDivClone = cloneCert.querySelector('.qr-code');
-    if (qrDivClone) {
-      qrDivClone.innerHTML = '';
-      const qrInner = document.createElement('div');
-      qrInner.id = `qr-print-${idx}`;
-      qrDivClone.appendChild(qrInner);
-    }
-    
-    cloneCert.setAttribute('data-qr-link-final', dynamicLink);
-    
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Certificate - ${escapeHtml(authorName)}</title>
-        <style>
-          * { margin:0; padding:0; box-sizing:border-box; }
-          body {
-            background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            font-family: 'Times New Roman', serif;
-            padding: 20px;
-          }
-          .certificate {
-            width: 1123px;
-            min-height: 794px;
-            background: white;
-            position: relative;
-            padding: 40px 45px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            margin: 0 auto;
-          }
-          .header-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom:20px; }
-          .logo-container { width:90px; height:90px; background:#fff; border-radius:12px; display:flex; align-items:center; justify-content:center; border:2px dashed #1e6f5c; overflow:hidden; }
-          .logo-container img { max-width:100%; max-height:100%; object-fit:contain; }
-          .cert-no { font-size:15px; font-weight:bold; margin-top:10px; background:#eef5e9; display:inline-block; padding:4px 12px; border-radius:30px; }
-          .issn { font-weight:bold; color:#1e4a2f; }
-          .peer { color:#b13e3e; }
-          .journal-name { font-size:28px; font-weight:800; text-align:center; margin:10px 0; color:#1c5d6e; border-bottom:2px solid #cbdcd9; display:inline-block; width:auto; padding-bottom:6px; }
-          .cert-content { text-align:center; margin-top:30px; font-size:19px; line-height:1.65; }
-          .cert-title { font-size:28px; font-weight:bold; color:#1f7a5c; border-bottom:3px solid #c0392b; display:inline-block; margin-bottom:20px; padding-bottom:8px; text-transform:uppercase; }
-          .publisher-section { position: absolute; bottom: 40px; right: 55px; text-align:center; }
-          .signature-container { width:120px; margin:0 auto; }
-          .signature-container img { max-width:100%; max-height:70px; object-fit:contain; }
-          .qr-code { position: absolute; bottom: 40px; left: 55px; background: white; padding: 5px; border-radius: 10px; }
-          @media print {
-            body { margin:0; padding:0; }
-            .certificate { box-shadow: none; border: 1px solid #ccc; page-break-after: avoid; break-inside: avoid; }
-          }
-        </style>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-      </head>
-      <body>
-        ${cloneCert.outerHTML}
-        <script>
-          window.onload = function() {
-            const qrDivs = document.querySelectorAll('.qr-code');
-            qrDivs.forEach((div) => {
-              const certDiv = div.closest('.certificate');
-              let link = '${dynamicLink}';
-              if(certDiv && certDiv.getAttribute('data-qr-link-final')) {
-                link = certDiv.getAttribute('data-qr-link-final');
-              }
-              if(div && typeof QRCode !== 'undefined') {
-                div.innerHTML = '';
-                try {
-                  new QRCode(div, { text: link, width: 85, height: 85 });
-                } catch(e) { div.innerHTML = '<div>QR</div>'; }
-              }
+    try {
+      const originalCert = currentCertificates[idx];
+      const author = originalCert.getAttribute('data-author') || formData.authors[idx];
+      const uniqueCertNo = originalCert.getAttribute('data-cert-no') || 
+        (total > 1 ? `${formData.certBase || 'CERT'}-${idx+1}` : (formData.certBase || 'CERTIFICATE'));
+      
+      // Create a deep clone of the certificate
+      const certClone = originalCert.cloneNode(true);
+      
+      // Update certificate number display
+      const certNoSpan = certClone.querySelector('.cert-no');
+      if (certNoSpan) {
+        certNoSpan.innerHTML = `🏅 Certificate No: ${escapeHtml(uniqueCertNo)}`;
+      }
+      
+      // Generate QR code for this certificate
+      const qrDiv = certClone.querySelector('.qr-code');
+      if (qrDiv) {
+        qrDiv.innerHTML = ''; // Clear existing
+        const dynamicLink = generateUniqueLinkForAuthor(idx, total, formData);
+        
+        // Create canvas for QR code
+        const qrCanvas = document.createElement('canvas');
+        qrCanvas.width = 85;
+        qrCanvas.height = 85;
+        qrCanvas.style.width = '85px';
+        qrCanvas.style.height = '85px';
+        qrDiv.appendChild(qrCanvas);
+        
+        // Generate QR code using the QRCode library to canvas
+        await new Promise((resolve, reject) => {
+          try {
+            // Create temporary div for QRCode generation
+            const tempDiv = document.createElement('div');
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            document.body.appendChild(tempDiv);
+            
+            new QRCode(tempDiv, {
+              text: dynamicLink,
+              width: 85,
+              height: 85,
+              colorDark: "#1e4a2f",
+              colorLight: "#ffffff",
+              correctLevel: QRCode.CorrectLevel.M
             });
-          };
-        <\/script>
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    
-    await new Promise(resolve => setTimeout(resolve, 800));
-    printWindow.focus();
-    printWindow.print();
-    
-    if (idx < total-1) {
-      alert(`📄 Certificate ${idx+1}/${total} - After saving PDF, click OK for next.`);
-    } else {
-      alert(`🎉 All ${total} certificates PDFs generated!`);
+            
+            setTimeout(() => {
+              const qrImg = tempDiv.querySelector('img');
+              if (qrImg) {
+                const img = new Image();
+                img.onload = () => {
+                  qrCanvas.getContext('2d').drawImage(img, 0, 0, 85, 85);
+                  document.body.removeChild(tempDiv);
+                  resolve();
+                };
+                img.onerror = () => {
+                  document.body.removeChild(tempDiv);
+                  reject();
+                };
+                img.src = qrImg.src;
+              } else {
+                document.body.removeChild(tempDiv);
+                reject();
+              }
+            }, 150);
+          } catch(e) {
+            document.body.removeChild(tempDiv);
+            reject(e);
+          }
+        });
+      }
+      
+      // Create a temporary container to render the certificate
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.style.width = '1123px';
+      tempContainer.style.backgroundColor = 'white';
+      document.body.appendChild(tempContainer);
+      tempContainer.appendChild(certClone);
+      
+      // Wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Capture with html2canvas
+      const canvas = await html2canvas(certClone, {
+        scale: 2.5,
+        backgroundColor: '#ffffff',
+        logging: false,
+        useCORS: true,
+        allowTaint: false
+      });
+      
+      // Create PDF in landscape
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'pt',
+        format: 'a4'
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      
+      // Generate filename
+      const fileName = total > 1 ? `${uniqueCertNo}.pdf` : `Certificate_${author.replace(/[^a-z0-9]/gi, '_').substring(0, 30)}.pdf`;
+      pdf.save(fileName);
+      
+      // Clean up
+      document.body.removeChild(tempContainer);
+      
+    } catch(error) {
+      console.error('Error generating PDF for certificate', idx, error);
+      alert(`Error generating certificate ${idx+1}. Please try again.`);
     }
-    await new Promise(resolve => setTimeout(resolve, 1200));
+    
+    // Small delay between downloads
+    if (idx < total - 1) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
+  
+  alert(`🎉 All ${total} certificates downloaded as PDFs! Each PDF is landscape with working QR codes.`);
 }
 
 function escapeHtml(str) {
@@ -639,11 +715,16 @@ function escapeHtml(str) {
   });
 }
 
-// Add placeholder attribute to Certificate No field with gray text
+// Add placeholder text for all fields
 document.addEventListener('DOMContentLoaded', function() {
   const certNoInput = document.getElementById('certNo');
   if (certNoInput) {
     certNoInput.placeholder = "e.g. IJEIR-2506";
+  }
+  
+  const affiliationsTextarea = document.getElementById('affiliations');
+  if (affiliationsTextarea) {
+    affiliationsTextarea.placeholder = "Enter ONE affiliation to use for ALL authors\nOR enter multiple affiliations (one per line) matching author order\n\nExamples:\nIIT Delhi, India\n\nOR\nIIT Delhi, India\nDelhi University, India\nBITS Pilani, India";
   }
 });
 </script>
